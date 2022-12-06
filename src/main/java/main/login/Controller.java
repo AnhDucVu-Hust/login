@@ -1,6 +1,5 @@
 package main.login;
 
-import java.io.IOException;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -8,17 +7,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
-import main.login.MyConnection;
-import javafx.scene.paint.Color;
+import javafx.scene.Node;
+import javafx.stage.Stage;
+import javafx.scene.Scene;
+import javafx.fxml.FXMLLoader;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
 
 public class Controller {
-
     @FXML
     private TextField txtUser;
     @FXML
@@ -28,34 +27,39 @@ public class Controller {
     @FXML
     private Button btnLogin;
     @FXML
-    private Label lblErrors;
-
-    @FXML
-    protected void handleButtonAction(MouseEvent event) {
-        if (event.getSource() == btnLogin) {
-            logIN();
+    protected void handleButtonAction(MouseEvent event) throws IOException {
+        if (event.getSource() == btnLogin){
+            if (logIN()=="Success") {
+                Node node = (Node) event.getSource();
+                Stage stage = (Stage) node.getScene().getWindow();
+                //stage.setMaximized(true);
+                stage.close();
+                stage.setTitle("Danh sách tài khoản");
+                Scene scene = new Scene(FXMLLoader.load(getClass().getResource("home.fxml")));
+                stage.setScene(scene);
+                stage.show();
+            }
         }
     }
-
-    private void setLblError(Color color, String text) {
-        lblErrors.setTextFill(color);
-        lblErrors.setText(text);
-        System.out.println(text);
-    }
-
-    private void logIN() {
-        String email = txtUser.getText().toString();
-        String password = txtPass.getText().toString();
-        Connection conn = null;
+    private String logIN(){
+        String status;
+        String email=txtUser.getText().toString();
+        String password=txtPass.getText().toString();
+        Connection conn = MyConnection.conDB();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
 
-        conn = MyConnection.conDB();
-        if (password.length() < 8) {
-            iblError.setText("Error");
-        } else {
+        if (email.isEmpty() || password.isEmpty()) {
+            iblError.setText("Empty credentials");
+            status="Error";
+        }
+        else if (password.length() < 8){
+            status="Error";
+            iblError.setText("Enter correct username/password");
+        }
+        else {
             String sql = "SELECT * FROM userinfo WHERE username = ? and password = ?";
-            String status = "Success";
+            status = "Success";
             try {
                 preparedStatement = conn.prepareStatement(sql);
                 preparedStatement.setString(1, email);
@@ -66,13 +70,13 @@ public class Controller {
                     status = "Error";
                 } else {
                     System.out.println("Login Success!");
-                    SuccessLogin.launch();
-                    
                 }
             } catch (SQLException ex) {
                 System.err.println(ex.getMessage());
                 status = "Exception";
             }
         }
+        return status;
     }
+
 }
